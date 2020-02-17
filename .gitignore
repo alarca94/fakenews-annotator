@@ -1,0 +1,7 @@
+private/
+data/
+
+.idea
+.ipynb_checkpoints/
+
+Newtral_Tests.ipynb
