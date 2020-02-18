@@ -14,7 +14,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Annotator for linguists")
 
-        self.row_id = 0
+        self.row_id = 8
         self.new_row_id = 0
         self.data = None
         self.new_data = None
@@ -164,12 +164,26 @@ class MainWindow(QtWidgets.QMainWindow):
             self.clean_form_layout()
 
     def update_screen_record(self):
-        self.grid_layout.itemAt(2).widget().setText(self.data.question.iloc[self.row_id])
-        self.grid_layout.itemAt(3).widget().setText(self.data.answer.iloc[self.row_id])
         if not pd.isna(self.data.links.iloc[self.row_id]):
             self.grid_layout.itemAt(4).widget().setHtml(self.process_links_field(self.data.links.iloc[self.row_id]))
         else:
-            self.grid_layout.itemAt(4).widget().setText('')
+            # If answer has links that have not been added to the table links field...
+            if re.findall(r'link ?(\d)', self.data.iloc[self.row_id].answer.lower()) \
+                    and not pd.isna(self.data.evidences.iloc[self.row_id]):
+                self.data.answer.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1]',
+                                                            self.data.answer.iloc[self.row_id])
+                self.data.links.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1] =>',
+                                                           self.data.evidences.iloc[self.row_id])
+                self.update_screen_record()
+
+                return
+            else:
+                self.grid_layout.itemAt(4).widget().setText('')
+
+        # question = re.sub(r'https://dl.airtable(.*)\s\[', r'[MEDIA_FILE] [', self.data.question.iloc[self.row_id])
+        question = re.sub('https://dl.airtable[^\s]*', r'[MEDIA_FILE]', self.data.question.iloc[self.row_id])
+        self.grid_layout.itemAt(2).widget().setText(question)
+        self.grid_layout.itemAt(3).widget().setText(self.data.answer.iloc[self.row_id])
 
     def clean_form_layout(self):
         for i in range(1, self.form_layout.count(), 2):
@@ -274,6 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @staticmethod
     def process_links_field(text):
-        new_text = re.sub(r' (\[LINK: \d\])', r'\n\1', text)
+        new_text = text.replace('//: ', '//').replace('com.', 'com')
+        new_text = re.sub(r' (\[LINK: \d\])', r'\n\1', new_text)
         new_text = re.sub(r'(\[LINK: \d\])( => )(.*)(\n)?', r'<a href="\3">\1</a>\2\3<br/>', new_text)
         return new_text
