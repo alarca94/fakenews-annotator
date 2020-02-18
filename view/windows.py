@@ -14,7 +14,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Annotator for linguists")
 
-        self.row_id = 33
+        self.row_id = 0
         self.new_row_id = 0
         self.data = None
         self.new_data = None
