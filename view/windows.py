@@ -14,7 +14,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Annotator for linguists")
 
-        self.row_id = 8
+        self.row_id = 33
         self.new_row_id = 0
         self.data = None
         self.new_data = None
@@ -120,13 +120,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_layout.setRowStretch(1, 1)
         self.grid_layout.setSpacing(10)
 
-        prev_button = QtWidgets.QPushButton('<<')
+        prev_button = QtWidgets.QPushButton('<<', shortcut=Qt.Key_Left)
         prev_button.clicked.connect(self.get_prev_instance)
         prev_button.setEnabled(False)
-        next_button = QtWidgets.QPushButton('>>')
+        next_button = QtWidgets.QPushButton('>>', shortcut=Qt.Key_Right)
         next_button.clicked.connect(self.get_next_instance)
         next_button.setEnabled(False)
-        save_button = QtWidgets.QPushButton('Save')
+        save_button = QtWidgets.QPushButton('Save', shortcut=QtGui.QKeySequence.Save)
         save_button.clicked.connect(self.save_instance)
         save_button.setMinimumWidth(100)
         save_button.setEnabled(False)
@@ -163,13 +163,23 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_screen_record()
             self.clean_form_layout()
 
+        print(self.row_id)
+
     def update_screen_record(self):
         if not pd.isna(self.data.links.iloc[self.row_id]):
             self.grid_layout.itemAt(4).widget().setHtml(self.process_links_field(self.data.links.iloc[self.row_id]))
+
+            if not pd.isna(self.data.iloc[self.row_id].evidences):
+                n_evidences = len(re.findall(r'([lL]ink ?(\d)|\[LINK: ?\d\])', self.data.iloc[self.row_id].evidences))
+                if n_evidences > len(re.findall(r'([lL]ink ?(\d)|\[LINK: ?\d\])',
+                                                self.grid_layout.itemAt(4).widget().toPlainText())):
+                    self.set_style('warning')
+                    self.status.showMessage('Check number of links in the original record and report possible errors',
+                                            5000)
         else:
             # If answer has links that have not been added to the table links field...
-            if re.findall(r'link ?(\d)', self.data.iloc[self.row_id].answer.lower()) \
-                    and not pd.isna(self.data.evidences.iloc[self.row_id]):
+            if not pd.isna(self.data.evidences.iloc[self.row_id])\
+                    and re.findall(r'link ?(\d)', self.data.iloc[self.row_id].answer.lower()):
                 self.data.answer.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1]',
                                                             self.data.answer.iloc[self.row_id])
                 self.data.links.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1] =>',
@@ -180,10 +190,18 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.grid_layout.itemAt(4).widget().setText('')
 
-        # question = re.sub(r'https://dl.airtable(.*)\s\[', r'[MEDIA_FILE] [', self.data.question.iloc[self.row_id])
-        question = re.sub('https://dl.airtable[^\s]*', r'[MEDIA_FILE]', self.data.question.iloc[self.row_id])
-        self.grid_layout.itemAt(2).widget().setText(question)
-        self.grid_layout.itemAt(3).widget().setText(self.data.answer.iloc[self.row_id])
+        if not pd.isna(self.data.question.iloc[self.row_id]):
+            question = re.sub('https://dl.airtable[^\s]*', r'[MEDIA_FILE]', self.data.question.iloc[self.row_id])
+            self.grid_layout.itemAt(2).widget().setText(question)
+        elif not pd.isna(self.data.mediaAttached.iloc[self.row_id]):
+            self.grid_layout.itemAt(2).widget().setText('[MEDIA_FILE]')
+        else:
+            self.grid_layout.itemAt(2).widget().setText('')
+
+        if not pd.isna(self.data.answer.iloc[self.row_id]):
+            self.grid_layout.itemAt(3).widget().setText(self.data.answer.iloc[self.row_id])
+        else:
+            self.grid_layout.itemAt(3).widget().setText('')
 
     def clean_form_layout(self):
         for i in range(1, self.form_layout.count(), 2):
@@ -200,6 +218,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.row_id += 1
             self.update_screen_record()
             self.clean_form_layout()
+
+        print(self.row_id)
 
     def save_instance(self):
         if self.save_filename == '':
@@ -258,6 +278,9 @@ class MainWindow(QtWidgets.QMainWindow):
         elif style == 'success':
             self.status.setStyleSheet(
                 "QStatusBar{color:green;font-weight:bold;}")
+        elif style == 'warning':
+            self.status.setStyleSheet(
+                "QStatusBar{color:yellow;font-weight:bold;}")
         elif style == 'default':
             self.status.setStyleSheet(self.default_styleSheet)
 
@@ -290,5 +313,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def process_links_field(text):
         new_text = text.replace('//: ', '//').replace('com.', 'com')
         new_text = re.sub(r' (\[LINK: \d\])', r'\n\1', new_text)
-        new_text = re.sub(r'(\[LINK: \d\])( => )(.*)(\n)?', r'<a href="\3">\1</a>\2\3<br/>', new_text)
+        new_text = re.sub(r'(\[LINK: \d\])( => )(.*)(\n)?',
+                          r'<a href="\3"><font color="#3085FF">\1</font></a>\2\3<br/>', new_text)
         return new_text
