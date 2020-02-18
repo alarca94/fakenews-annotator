@@ -77,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
         label_box.addItems(['True', 'Partially True', 'Partially False', 'False'])
         label_box.setMinimumWidth(min_cbox_width)
 
-        form = {'Source Type': type_box, 'Title': title_text, 'Context': content_text,
+        form = {'Source Type': type_box, 'Title': title_text, 'Content': content_text,
                 'Question Indicator': question_ind, 'label': label_box}
 
         for text, field in form.items():
