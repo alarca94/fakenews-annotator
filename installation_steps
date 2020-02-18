@@ -1,0 +1,7 @@
+Steps to be able to run the framework:
+
+1. Install python 3 (https://www.python.org/downloads/). Remember to add python path to the system's environment variables.
+
+2. Install pandas package for python: pip3 install pandas
+
+3. Install PyQt5 package for python: pip3 install PyQt5
