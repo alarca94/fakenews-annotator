@@ -2,6 +2,10 @@ Steps to be able to run the framework:
 
 1. Install python 3 (https://www.python.org/downloads/). Remember to add python path to the system's environment variables.
 
-2. Install pandas package for python: pip3 install pandas
+2. Install pandas package for python through the command window: pip3 install pandas
 
-3. Install PyQt5 package for python: pip3 install PyQt5
+3. Install PyQt5 package for python through the command window: pip3 install PyQt5
+
+4. Download the .zip folder (at https://github.com/alarca94/fakenews-annotator) or clone the github repository through the command window with: git clone https://github.com/alarca94/fakenews-annotator.git
+
+5. Run from the console window (located at the annotator directory that was just downloaded/cloned): python3 gui.py
