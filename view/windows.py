@@ -20,7 +20,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.new_data = None
         self.save_filename = ''
         self.delimiter = '||'
-        self.columns = ['SourceType', 'Title', 'Content', 'Indicator', 'OriginId', 'Label']
+        self.columns = ['SourceType', 'Title', 'Subtitle', 'Content', 'Indicator', 'OriginId', 'Label']
 
         # -------------- SETTING THE TOOLBAR -------------- #
         toolbar = QtWidgets.QToolBar("My main toolbar")
@@ -64,21 +64,30 @@ class MainWindow(QtWidgets.QMainWindow):
         title_text = QtWidgets.QTextEdit()
         title_text.setPlaceholderText('Enter the title of the article (if any)')
         title_text.setMinimumSize(default_size[0], default_size[1])
+        title_text.setAcceptRichText(False)
+
+        subtitle_text = QtWidgets.QTextEdit()
+        subtitle_text.setPlaceholderText('Enter the subtitle of the article (if any)')
+        subtitle_text.setMinimumSize(default_size[0], default_size[1])
+        subtitle_text.setAcceptRichText(False)
 
         content_text = QtWidgets.QTextEdit()
         content_text.setPlaceholderText('Enter the content of the article')
         content_text.setMinimumSize(default_size[0], default_size[1])
+        content_text.setAcceptRichText(False)
 
         question_ind = QtWidgets.QTextEdit()
         question_ind.setPlaceholderText('Enter the question indicator (if any)')
         question_ind.setMinimumSize(default_size[0], default_size[1])
+        question_ind.setAcceptRichText(False)
 
         label_box = QtWidgets.QComboBox()
         label_box.addItems(['True', 'Partially True', 'Partially False', 'False'])
         label_box.setMinimumWidth(min_cbox_width)
 
-        form = {'Source Type': type_box, 'Title': title_text, 'Content': content_text,
-                'Question Indicator': question_ind, 'label': label_box}
+        form = {'Source Type': type_box, 'Title': title_text, 'Subtitle': subtitle_text, 'Content': content_text,
+                'Question Indicator': question_ind, 'Label': label_box}
+        self.form_dict = {key: i for i, key in enumerate(form.keys())}
 
         for text, field in form.items():
             self.form_layout.addRow(QtWidgets.QLabel(text), field)
@@ -231,20 +240,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 if not os.path.isfile(self.save_filename):
                     with open(self.save_filename, 'a') as f:
-                        f.write(self.delimiter.join(self.columns) + '\n')
+                        f.write(self.delimiter.join(self.columns))
 
         if self.save_filename != '':
-            record = [self.form_layout.itemAt(1).widget().currentText(),
-                      self.form_layout.itemAt(3).widget().toPlainText(),
-                      self.form_layout.itemAt(5).widget().toPlainText(),
-                      self.form_layout.itemAt(7).widget().toPlainText(),
+            record = [self.form_layout.itemAt(self.form_dict['Source Type'] * 2 + 1).widget().currentText(),
+                      self.form_layout.itemAt(self.form_dict['Title'] * 2 + 1).widget().toPlainText(),
+                      self.form_layout.itemAt(self.form_dict['Subtitle'] * 2 + 1).widget().toPlainText(),
+                      self.form_layout.itemAt(self.form_dict['Content'] * 2 + 1).widget().toPlainText(),
+                      self.form_layout.itemAt(self.form_dict['Question Indicator'] * 2 + 1).widget().toPlainText(),
                       self.data.iloc[self.row_id].id,
-                      self.form_layout.itemAt(9).widget().currentText()]
+                      self.form_layout.itemAt(self.form_dict['Label'] * 2 + 1).widget().currentText()]
 
             self.clean_form_layout()
 
             with open(self.save_filename, 'a') as f:
-                f.write(self.delimiter.join(record) + '\n')
+                f.write('\n' + self.delimiter.join(record))
 
             self.set_style('success')
             self.status.showMessage('Successfully saved record!', 4000)
@@ -264,7 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
-            file.write('\n')
+            # file.write('\n')
 
         self.grid_layout2.itemAt(3).widget().setEnabled(False)
 
