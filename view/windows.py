@@ -261,6 +261,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.grid_layout2.itemAt(3).widget().setEnabled(True)
 
+        with open(self.save_filename, 'r') as f:
+            print(repr(f.read()))
+
     def remove_instance(self):
         with open(self.save_filename, "a+", encoding="utf-8") as file:
             file.seek(0, os.SEEK_END)
@@ -271,7 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file.seek(pos, os.SEEK_SET)
 
             if pos > 0:
-                file.seek(pos, os.SEEK_SET)
+                file.seek(pos-1, os.SEEK_SET)
                 file.truncate()
 
             # file.write('\n')
@@ -280,6 +283,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.set_style('success')
         self.status.showMessage('Successfully removed the last record!', 4000)
+
+        with open(self.save_filename, 'r') as f:
+            print(repr(f.read()))
 
     def set_style(self, style):
         if style == 'error':
