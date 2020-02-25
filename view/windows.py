@@ -290,28 +290,42 @@ class MainWindow(QtWidgets.QMainWindow):
     '''
 
     def remove_instance(self):
-        instance = self.saved_data.tail(1).to_csv(sep=self.delimiter, index=False, header=False)
-        print(repr(instance))
-        new_str = ''
         matches = 0
-        with open(self.save_filename, "a+", encoding="utf-8") as file:
+        requires_quotes = False
+        last_field = False
+        with open(self.save_filename, "a+", encoding="utf-8", errors='ignore') as file:
             file.seek(0, os.SEEK_END)
             pos = file.tell()
 
-            while pos > 0 and matches < len(instance):
+            prev_char = ''
+            curr_char = file.read(1)
+            while pos > 0 and (not last_field or curr_char != '\n'):
                 pos -= 1
-                new_str = file.read(1) + new_str
-                if list(new_str) and new_str[0] == instance[-matches-1]:
-                    matches += 1
+
+                if curr_char == self.delimiter:
+                    if requires_quotes and prev_char == '"':
+                        matches += 1
+                        requires_quotes = False
+                    elif not requires_quotes:
+                        matches += 1
+
+                    if matches == self.saved_data.shape[1] - 1:
+                        last_field = True
+
+                elif curr_char == '"' and prev_char == self.delimiter:
+                    requires_quotes = True
+
                 file.seek(pos, os.SEEK_SET)
 
+                prev_char = curr_char
+                curr_char = file.read(1)
+
             if pos > 0:
-                if os.name == 'nt':
-                    pos -= 1
+                if os.name == 'posix':
+                    pos += 1
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
-        print(repr(new_str))
         self.grid_layout2.itemAt(3).widget().setEnabled(False)
 
         self.set_style('success')
