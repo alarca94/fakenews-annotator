@@ -256,7 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.clean_form_layout()
             self.saved_data = self.saved_data.append(pd.Series(record, index=self.columns), ignore_index=True)
 
-            with open(self.save_filename, 'a', newline='\n') as f:
+            with open(self.save_filename, 'a', newline='\n', encoding='utf-8') as f:
                 # f.write('\n' + self.delimiter.join(record))
                 self.saved_data.tail(1).to_csv(f, sep=self.delimiter, index=False, header=False)
 
