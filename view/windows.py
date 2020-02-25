@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data = None
         self.new_data = None
         self.save_filename = ''
-        self.delimiter = '||'
+        self.delimiter = '|'
         self.columns = ['SourceType', 'Title', 'Subtitle', 'Content', 'Indicator', 'OriginId', 'Label']
 
         # -------------- SETTING THE TOOLBAR -------------- #
@@ -240,7 +240,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 if not os.path.isfile(self.save_filename):
                     with open(self.save_filename, 'a') as f:
-                        f.write(self.delimiter.join(self.columns))
+                        f.write(self.delimiter.join(self.columns) + '\n')
+
+                self.saved_data = pd.read_csv(self.save_filename, sep=self.delimiter)
 
         if self.save_filename != '':
             record = [self.form_layout.itemAt(self.form_dict['Source Type'] * 2 + 1).widget().currentText(),
@@ -252,16 +254,21 @@ class MainWindow(QtWidgets.QMainWindow):
                       self.form_layout.itemAt(self.form_dict['Label'] * 2 + 1).widget().currentText()]
 
             self.clean_form_layout()
+            self.saved_data = self.saved_data.append(pd.Series(record, index=self.columns), ignore_index=True)
 
             with open(self.save_filename, 'a') as f:
-                f.write('\n' + self.delimiter.join(record))
+                # f.write('\n' + self.delimiter.join(record))
+                self.saved_data.tail(1).to_csv(f, sep=self.delimiter, index=False, header=False)
 
             self.set_style('success')
             self.status.showMessage('Successfully saved record!', 4000)
 
             self.grid_layout2.itemAt(3).widget().setEnabled(True)
 
+    '''
     def remove_instance(self):
+        instance = self.saved_data.tail(1).to_csv(sep=self.delimiter, index=False, header=False)
+        matches = 0
         with open(self.save_filename, "a+", encoding="utf-8") as file:
             file.seek(0, os.SEEK_END)
             pos = file.tell() - 1
@@ -276,6 +283,35 @@ class MainWindow(QtWidgets.QMainWindow):
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
+        self.grid_layout2.itemAt(3).widget().setEnabled(False)
+
+        self.set_style('success')
+        self.status.showMessage('Successfully removed the last record!', 4000)
+    '''
+
+    def remove_instance(self):
+        instance = self.saved_data.tail(1).to_csv(sep=self.delimiter, index=False, header=False)
+        print(repr(instance))
+        new_str = ''
+        matches = 0
+        with open(self.save_filename, "a+", encoding="utf-8") as file:
+            file.seek(0, os.SEEK_END)
+            pos = file.tell()
+
+            while pos > 0 and matches < len(instance):
+                pos -= 1
+                new_str = file.read(1) + new_str
+                if list(new_str) and new_str[0] == instance[-matches-1]:
+                    matches += 1
+                file.seek(pos, os.SEEK_SET)
+
+            if pos > 0:
+                if os.name == 'nt':
+                    pos -= 1
+                file.seek(pos, os.SEEK_SET)
+                file.truncate()
+
+        print(repr(new_str))
         self.grid_layout2.itemAt(3).widget().setEnabled(False)
 
         self.set_style('success')
