@@ -20,7 +20,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.new_data = None
         self.save_filename = ''
         self.delimiter = '|'
-        self.columns = ['SourceType', 'Title', 'Subtitle', 'Content', 'Indicator', 'OriginId', 'Label']
+        self.columns = ['SourceType', 'SourceField', 'Title', 'Subtitle', 'Content', 'Indicator', 'OriginId', 'Label']
 
         # -------------- SETTING THE TOOLBAR -------------- #
         toolbar = QtWidgets.QToolBar("My main toolbar")
@@ -55,11 +55,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_layout2.setAlignment(Qt.AlignCenter)
 
         min_cbox_width = 150
+        max_cbox_width = 300
         type_box = QtWidgets.QComboBox()
-        type_box.addItems(['Newspaper', 'Twitter', 'Facebook', 'Other'])
+        type_box.addItems(['Newspaper', 'Blog/Magazine', 'Twitter', 'Facebook', 'Other'])
         type_box.setMinimumWidth(min_cbox_width)
+        type_box.setMaximumWidth(max_cbox_width)
 
-        default_size = (700, 100)
+        origin = QtWidgets.QComboBox()
+        origin.addItems(['Links Question', 'Links Answer', 'Question', 'Answer'])
+        origin.setMinimumWidth(min_cbox_width)
+        origin.setMaximumWidth(max_cbox_width)
+
+        default_size = (600, 100)
 
         title_text = QtWidgets.QTextEdit()
         title_text.setPlaceholderText('Enter the title of the article (if any)')
@@ -82,10 +89,11 @@ class MainWindow(QtWidgets.QMainWindow):
         question_ind.setAcceptRichText(False)
 
         label_box = QtWidgets.QComboBox()
-        label_box.addItems(['True', 'Partially True', 'Partially False', 'False'])
+        label_box.addItems(['True', 'Indefinite', 'False'])
         label_box.setMinimumWidth(min_cbox_width)
+        label_box.setMaximumWidth(max_cbox_width)
 
-        form = {'Source Type': type_box, 'Title': title_text, 'Subtitle': subtitle_text, 'Content': content_text,
+        form = {'Source Type': type_box, 'Source Field': origin, 'Title': title_text, 'Subtitle': subtitle_text, 'Content': content_text,
                 'Question Indicator': question_ind, 'Label': label_box}
         self.form_dict = {key: i for i, key in enumerate(form.keys())}
 
@@ -94,27 +102,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.form_layout.setLabelAlignment(Qt.AlignLeft)
 
+        qa_height = 50
         label = QtWidgets.QLabel('Question')
         label.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         label.setAlignment(Qt.AlignCenter)
+        label.setFixedHeight(qa_height)
         label.setStyleSheet('background-color:#90D8FE;color:#000000;font-weight: bold;')
         label2 = QtWidgets.QLabel('Answer')
         label2.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         label2.setAlignment(Qt.AlignCenter)
+        label2.setFixedHeight(qa_height)
         label2.setStyleSheet('background-color:#90D8FE;color:#000000;font-weight: bold;')
-        label3 = QtWidgets.QLabel()
-        label3.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        label3.setAlignment(Qt.AlignJustify)
-        label3.setWordWrap(True)
-        label4 = QtWidgets.QLabel()
-        label4.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        label4.setAlignment(Qt.AlignJustify)
-        label4.setWordWrap(True)
+        label3 = QtWidgets.QTextBrowser()
+        label3.setAcceptRichText(True)
+        label3.setOpenExternalLinks(True)
+        label3.setReadOnly(True)
+        label4 = QtWidgets.QTextEdit()
+        label4.setReadOnly(True)
+        label4.setAcceptRichText(False)
 
         links = QtWidgets.QTextBrowser()
         links.setAcceptRichText(True)
         links.setOpenExternalLinks(True)
-        # links.setStyleSheet('background-color:#90D8FE;color:#000000;')
         links.setFixedHeight(100)
 
         self.grid_layout.addWidget(label, 0, 0)
@@ -153,8 +162,8 @@ class MainWindow(QtWidgets.QMainWindow):
         bottom_layout.addLayout(self.form_layout, 75)
         bottom_layout.addLayout(self.grid_layout2, 25)
 
-        gen_layout.addLayout(upper_layout, 25)
-        gen_layout.addLayout(bottom_layout, 75)
+        gen_layout.addLayout(upper_layout, 50)
+        gen_layout.addLayout(bottom_layout, 50)
 
         widget = QtWidgets.QWidget()
         widget.setLayout(gen_layout)
@@ -187,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                             5000)
         else:
             # If answer has links that have not been added to the table links field...
-            if not pd.isna(self.data.evidences.iloc[self.row_id])\
+            if not pd.isna(self.data.evidences.iloc[self.row_id]) \
                     and re.findall(r'link ?(\d)', self.data.iloc[self.row_id].answer.lower()):
                 self.data.answer.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1]',
                                                             self.data.answer.iloc[self.row_id])
@@ -200,10 +209,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.grid_layout.itemAt(4).widget().setText('')
 
         if not pd.isna(self.data.question.iloc[self.row_id]):
-            question = re.sub('https://dl.airtable[^\s]*', r'[MEDIA_FILE]', self.data.question.iloc[self.row_id])
-            self.grid_layout.itemAt(2).widget().setText(question)
+            question = re.sub('(https://dl.airtable)([^\s]*)', r'<a href="\1\2">[MEDIA_FILE]</a>',
+                              self.data.question.iloc[self.row_id])
+            self.grid_layout.itemAt(2).widget().setHtml(question)
         elif not pd.isna(self.data.mediaAttached.iloc[self.row_id]):
-            self.grid_layout.itemAt(2).widget().setText('[MEDIA_FILE]')
+            self.grid_layout.itemAt(2).widget().setHtml('<a href="' + self.data.mediaAttached.iloc[self.row_id] +
+                                                        '">[MEDIA_FILE]</a>')
         else:
             self.grid_layout.itemAt(2).widget().setText('')
 
@@ -220,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.form_layout.itemAt(i).widget().setText('')
 
     def get_next_instance(self):
-        if self.row_id == (self.data.shape[0]-1):
+        if self.row_id == (self.data.shape[0] - 1):
             self.set_style('error')
             self.status.showMessage('This is the last record in the file', 5000)
         else:
@@ -246,6 +257,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.save_filename != '':
             record = [self.form_layout.itemAt(self.form_dict['Source Type'] * 2 + 1).widget().currentText(),
+                      self.form_layout.itemAt(self.form_dict['Source Field'] * 2 + 1).widget().currentText(),
                       self.form_layout.itemAt(self.form_dict['Title'] * 2 + 1).widget().toPlainText(),
                       self.form_layout.itemAt(self.form_dict['Subtitle'] * 2 + 1).widget().toPlainText(),
                       self.form_layout.itemAt(self.form_dict['Content'] * 2 + 1).widget().toPlainText(),
@@ -256,38 +268,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.clean_form_layout()
             self.saved_data = self.saved_data.append(pd.Series(record, index=self.columns), ignore_index=True)
 
-            with open(self.save_filename, 'a', newline='\n', encoding='utf-8') as f:
-                # f.write('\n' + self.delimiter.join(record))
+            with open(self.save_filename, 'a', newline='\n', encoding='utf-8', errors='ignore') as f:
                 self.saved_data.tail(1).to_csv(f, sep=self.delimiter, index=False, header=False)
 
             self.set_style('success')
             self.status.showMessage('Successfully saved record!', 4000)
 
             self.grid_layout2.itemAt(3).widget().setEnabled(True)
-
-    '''
-    def remove_instance(self):
-        instance = self.saved_data.tail(1).to_csv(sep=self.delimiter, index=False, header=False)
-        matches = 0
-        with open(self.save_filename, "a+", encoding="utf-8") as file:
-            file.seek(0, os.SEEK_END)
-            pos = file.tell() - 1
-
-            while pos > 0 and file.read(1) != "\n":
-                pos -= 1
-                file.seek(pos, os.SEEK_SET)
-
-            if pos > 0:
-                if os.name == 'nt':
-                    pos -= 1
-                file.seek(pos, os.SEEK_SET)
-                file.truncate()
-
-        self.grid_layout2.itemAt(3).widget().setEnabled(False)
-
-        self.set_style('success')
-        self.status.showMessage('Successfully removed the last record!', 4000)
-    '''
 
     def remove_instance(self):
         matches = 0
