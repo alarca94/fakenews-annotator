@@ -5,3 +5,4 @@ data/
 .ipynb_checkpoints/
 
 Newtral_Tests.ipynb
+analysis.py
