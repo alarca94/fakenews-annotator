@@ -256,7 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.clean_form_layout()
             self.saved_data = self.saved_data.append(pd.Series(record, index=self.columns), ignore_index=True)
 
-            with open(self.save_filename, 'a') as f:
+            with open(self.save_filename, 'a', newline='\n') as f:
                 # f.write('\n' + self.delimiter.join(record))
                 self.saved_data.tail(1).to_csv(f, sep=self.delimiter, index=False, header=False)
 
@@ -321,8 +321,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 curr_char = file.read(1)
 
             if pos > 0:
-                if os.name == 'posix':
-                    pos += 1
+                pos += 1
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
