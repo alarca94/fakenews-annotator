@@ -197,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             # If answer has links that have not been added to the table links field...
             if not pd.isna(self.data.evidences.iloc[self.row_id]) \
+                    and not pd.isna(self.data.answer.iloc[self.row_id]) \
                     and re.findall(r'link ?(\d)', self.data.iloc[self.row_id].answer.lower()):
                 self.data.answer.iloc[self.row_id] = re.sub(r'[lL]ink ?(\d):?', r'[LINK: \1]',
                                                             self.data.answer.iloc[self.row_id])
