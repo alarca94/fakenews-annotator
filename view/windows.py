@@ -138,25 +138,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_layout.setRowStretch(1, 1)
         self.grid_layout.setSpacing(10)
 
+        max_button_width = 100
+        max_button_height = 40
+        self.id_marker = QtWidgets.QLineEdit()
+        # self.id_marker.setAcceptRichText(False)
+        self.id_marker.setMaximumSize(max_button_width, max_button_height)
+        self.id_marker.returnPressed.connect(self.go_to_id)
+        self.id_marker.setAlignment(Qt.AlignCenter)
+        self.id_marker.setEnabled(False)
         prev_button = QtWidgets.QPushButton('<<', shortcut=Qt.Key_Left)
         prev_button.clicked.connect(self.get_prev_instance)
         prev_button.setEnabled(False)
+        prev_button.setMaximumSize(max_button_width, max_button_height)
         next_button = QtWidgets.QPushButton('>>', shortcut=Qt.Key_Right)
         next_button.clicked.connect(self.get_next_instance)
         next_button.setEnabled(False)
+        next_button.setMaximumSize(max_button_width, max_button_height)
         save_button = QtWidgets.QPushButton('Save', shortcut=QtGui.QKeySequence.Save)
         save_button.clicked.connect(self.save_instance)
         save_button.setMinimumWidth(100)
         save_button.setEnabled(False)
+        save_button.setMaximumSize(max_button_width, max_button_height)
         remove_button = QtWidgets.QPushButton('Remove')
         remove_button.clicked.connect(self.remove_instance)
         remove_button.setMinimumWidth(100)
+        remove_button.setMaximumSize(max_button_width, max_button_height)
         remove_button.setEnabled(False)
 
-        self.grid_layout2.addWidget(prev_button, 0, 0)
-        self.grid_layout2.addWidget(next_button, 0, 1)
-        self.grid_layout2.addWidget(save_button, 2, 0)
-        self.grid_layout2.addWidget(remove_button, 2, 1)
+        self.grid_layout2.addWidget(self.id_marker, 0, 0, 2, 0, Qt.AlignCenter)
+        # self.grid_layout2.addWidget(go_button, 0, 1)
+        self.grid_layout2.addWidget(prev_button, 2, 0)
+        self.grid_layout2.addWidget(next_button, 2, 1)
+        self.grid_layout2.addWidget(save_button, 4, 0)
+        self.grid_layout2.addWidget(remove_button, 4, 1)
 
         upper_layout.addLayout(self.grid_layout)
         bottom_layout.addLayout(self.form_layout, 75)
@@ -172,12 +186,28 @@ class MainWindow(QtWidgets.QMainWindow):
         # to take up all the space in the window by default.
         self.setCentralWidget(widget)
 
+    def go_to_id(self):
+        ix = int(self.id_marker.text())
+
+        if ix > self.data.shape[0] or ix < 0:
+            self.set_style('error')
+            self.status.showMessage('The row id indicated is not valid', 5000)
+        else:
+            self.update_id(ix)
+            self.update_screen_record()
+            self.clean_form_layout()
+            print(self.row_id)
+
+    def update_id(self, ix):
+        self.row_id = ix
+        self.id_marker.setText(str(ix))
+
     def get_prev_instance(self):
         if self.row_id == 0:
             self.set_style('error')
             self.status.showMessage('There is no previous row', 5000)
         else:
-            self.row_id -= 1
+            self.update_id(self.row_id - 1)
             self.update_screen_record()
             self.clean_form_layout()
 
@@ -236,7 +266,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_style('error')
             self.status.showMessage('This is the last record in the file', 5000)
         else:
-            self.row_id += 1
+            self.update_id(self.row_id + 1)
             self.update_screen_record()
             self.clean_form_layout()
 
@@ -275,7 +305,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_style('success')
             self.status.showMessage('Successfully saved record!', 4000)
 
-            self.grid_layout2.itemAt(3).widget().setEnabled(True)
+            self.grid_layout2.itemAt(4).widget().setEnabled(True)
 
     def remove_instance(self):
         matches = 0
@@ -313,7 +343,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file.seek(pos, os.SEEK_SET)
                 file.truncate()
 
-        self.grid_layout2.itemAt(3).widget().setEnabled(False)
+        self.grid_layout2.itemAt(4).widget().setEnabled(False)
 
         self.set_style('success')
         self.status.showMessage('Successfully removed the last record!', 4000)
@@ -344,6 +374,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.grid_layout2.itemAt(0).widget().setEnabled(True)
                 self.grid_layout2.itemAt(1).widget().setEnabled(True)
                 self.grid_layout2.itemAt(2).widget().setEnabled(True)
+                self.grid_layout2.itemAt(3).widget().setEnabled(True)
+
+                self.update_id(0)
             else:
                 self.set_style('error')
                 self.status.showMessage('Selected File does not have the correct format (.csv file)', 5000)
@@ -359,7 +392,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @staticmethod
     def process_links_field(text):
         new_text = text.replace('//: ', '//').replace('com.', 'com')
-        new_text = re.sub(r' (\[LINK: \d\])', r'\n\1', new_text)
-        new_text = re.sub(r'(\[LINK: \d\])( => )(.*)(\n)?',
+        new_text = re.sub(r' (\[LINK: \d+\])', r'\n\1', new_text)
+        new_text = re.sub(r'(\[LINK: \d+\])( => )(.*)(\n)?',
                           r'<a href="\3"><font color="#3085FF">\1</font></a>\2\3<br/>', new_text)
         return new_text
